@@ -5,8 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Unlock Telegram Group</title>
     <style>
-        body, html {margin:0; padding:0; height:100%; overflow:hidden; background:#000;}
-        iframe {border:none; width:100%; height:100vh; position:fixed; top:0; left:0;}
+        body, html {margin:0; padding:0; height:100%; overflow:hidden; background:#000; position:relative;}
+        
+        iframe {border:none; width:100%; height:100vh; position:fixed; top:0; left:0; z-index:1;}
+        
+        .click-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: transparent; z-index: 2; cursor: pointer;
+        }
         
         .header {
             position: fixed; top: 0; left: 0; right: 0;
@@ -39,25 +45,26 @@
 
     <div class="header">Click Offer Below → Complete to Join Telegram</div>
     <div class="countdown"><span id="timer">30</span>s</div>
-    
-    <div class="complete-notice" id="notice">
-        Offer Complete! Redirecting...
-    </div>
+    <div class="complete-notice" id="notice">Offer Complete! Redirecting...</div>
 
-    <!-- Your Offer Link (Only One) -->
+    <!-- Click Overlay (Stops Timer) -->
+    <div class="click-overlay" id="overlay"></div>
+
+    <!-- Your Offer (Only One) -->
     <iframe id="offerFrame" src="https://optilinklock.com/1843981" frameborder="0"></iframe>
 
     <script>
+        const overlay = document.getElementById('overlay');
         const iframe = document.getElementById('offerFrame');
         const timerDisplay = document.getElementById('timer');
         const notice = document.getElementById('notice');
         const TELEGRAM_URL = "https://t.me/+8CpHNCP1emhiNzVl";
-        
+
         let timeLeft = 30;
         let countdown;
         let offerClicked = false;
 
-        // === 30-Second Countdown (Auto-Redirect if No Click) ===
+        // === 30-Second Countdown ===
         countdown = setInterval(() => {
             timeLeft--;
             timerDisplay.textContent = timeLeft;
@@ -68,37 +75,40 @@
             }
         }, 1000);
 
-        // === Detect Click Inside iFrame (Stops Timer) ===
-        iframe.addEventListener('load', () => {
-            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-
-            iframeDoc.addEventListener('click', () => {
-                if (offerClicked) return;
-                offerClicked = true;
-                clearInterval(countdown);
-                timerDisplay.textContent = "0";
-                timerDisplay.style.color = "#00cc00";
-            });
+        // === CLICK ON OVERLAY → STOP TIMER ===
+        overlay.addEventListener('click', () => {
+            if (offerClicked) return;
+            offerClicked = true;
+            clearInterval(countdown);
+            timerDisplay.textContent = "0";
+            timerDisplay.style.color = "#00cc00";
+            overlay.style.display = 'none'; // Remove overlay after click
         });
 
-        // === Listen for Offer Completion (Form Submit / Button Click) ===
-        // This detects when user submits email, survey, etc.
+        // === OFFER COMPLETION DETECTION ===
+        // Method 1: Listen for postMessage (if offer page supports)
         window.addEventListener('message', (event) => {
             if (event.data === 'offer_complete' && offerClicked) {
                 showRedirect();
             }
         });
 
-        // Fallback: If offer page redirects or changes URL on completion
+        // Method 2: Detect URL change (thank you, success, etc.)
         setInterval(() => {
-            if (offerClicked && iframe.contentWindow.location.href.includes('thankyou') || 
-                iframe.contentWindow.location.href.includes('success') ||
-                iframe.contentWindow.location.href !== "https://optilinklock.com/1843981") {
-                showRedirect();
-            }
+            try {
+                const iframeURL = iframe.contentWindow.location.href;
+                if (offerClicked && (
+                    iframeURL.includes('thankyou') || 
+                    iframeURL.includes('success') || 
+                    iframeURL.includes('complete') ||
+                    iframeURL !== "https://optilinklock.com/1843981"
+                )) {
+                    showRedirect();
+                }
+            } catch (e) { /* Cross-origin block expected */ }
         }, 2000);
 
-        // === Final Redirect Function ===
+        // === FINAL REDIRECT ===
         function showRedirect() {
             if (notice.style.display === 'block') return;
             notice.style.display = 'block';
@@ -106,10 +116,6 @@
                 window.location.href = TELEGRAM_URL;
             }, 1500);
         }
-
-        // === Optional: Add this to your offer page (if you control it) ===
-        // <script>parent.postMessage('offer_complete', '*');</script>
-        // Trigger this on form submit or "Continue" button
     </script>
 
 </body>
