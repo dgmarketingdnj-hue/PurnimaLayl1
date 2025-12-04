@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unlock Telegram Group</title>
+    <title>Complete Offer to Join</title>
     <style>
-        body, html {margin:0; padding:0; height:100%; overflow:hidden; background:#000; position:relative;}
+        body, html {margin:0; padding:0; height:100%; overflow:hidden; background:#000; font-family: Arial, sans-serif;}
         
         iframe {border:none; width:100%; height:100vh; position:fixed; top:0; left:0; z-index:1;}
         
         .click-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: transparent; z-index: 2; cursor: pointer;
+            background: rgba(255,255,255,0.01); z-index: 2; cursor: pointer;
         }
         
         .header {
@@ -23,98 +23,118 @@
         .countdown {
             position: fixed; top: 60px; right: 15px;
             color: #ff66cc; font-size: 22px; font-weight: bold;
-            background: rgba(0,0,0,0.5); padding: 8px 14px; border-radius: 10px;
+            background: rgba(0,0,0,0.6); padding: 8px 14px; border-radius: 10px;
             z-index: 999;
         }
 
-        .complete-notice {
-            display: none; position: fixed; bottom: 20px; left: 50%;
-            transform: translateX(-50%); background: #00cc00; color: white;
-            padding: 15px 30px; border-radius: 25px; font-weight: bold; font-size: 18px;
-            z-index: 999; animation: pulse 1.5s infinite;
+        /* Popup: Only if clicked but not completed */
+        .popup {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 1000; justify-content: center; align-items: center;
+            flex-direction: column; color: white; text-align: center; padding: 20px;
         }
-
-        @keyframes pulse {
-            0% { transform: translateX(-50%) scale(1); }
-            50% { transform: translateX(-50%) scale(1.05); }
-            100% { transform: translateX(-50%) scale(1); }
+        .popup h2 {font-size: 26px; margin-bottom: 15px; color: #ff66cc;}
+        .popup p {font-size: 18px; margin-bottom: 25px; max-width: 90%;}
+        .popup button {
+            background: #ff0066; color: white; border: none; padding: 16px 32px;
+            border-radius: 30px; font-size: 18px; font-weight: bold; cursor: pointer;
         }
+        .popup button:hover {background: #cc0052;}
     </style>
 </head>
 <body>
 
-    <div class="header">Click Offer Below → Complete to Join Telegram</div>
+    <div class="header">Complete Offer Below to Join Telegram Group</div>
     <div class="countdown"><span id="timer">30</span>s</div>
-    <div class="complete-notice" id="notice">Offer Complete! Redirecting...</div>
 
     <!-- Click Overlay (Stops Timer) -->
     <div class="click-overlay" id="overlay"></div>
 
-    <!-- Your Offer (Only One) -->
+    <!-- Your Offer (Only ONE) -->
     <iframe id="offerFrame" src="https://optilinklock.com/1843981" frameborder="0"></iframe>
+
+    <!-- Popup: Only if clicked but not completed -->
+    <div class="popup" id="popup">
+        <h2>Complete the Offer to Join!</h2>
+        <p>Finish the offer (email, survey, etc.) to unlock the Telegram group.</p>
+        <button onclick="closePopup()">Continue Offer</button>
+    </div>
 
     <script>
         const overlay = document.getElementById('overlay');
-        const iframe = document.getElementById('offerFrame');
         const timerDisplay = document.getElementById('timer');
-        const notice = document.getElementById('notice');
+        const popup = document.getElementById('popup');
+        const iframe = document.getElementById('offerFrame');
         const TELEGRAM_URL = "https://t.me/+8CpHNCP1emhiNzVl";
 
         let timeLeft = 30;
         let countdown;
         let offerClicked = false;
+        let offerCompleted = false;
 
         // === 30-Second Countdown ===
         countdown = setInterval(() => {
             timeLeft--;
             timerDisplay.textContent = timeLeft;
 
-            if (timeLeft <= 0 && !offerClicked) {
+            if (timeLeft <= 0) {
                 clearInterval(countdown);
-                window.location.href = TELEGRAM_URL;
+                timerDisplay.textContent = "0";
+
+                // ONLY SHOW POPUP IF USER CLICKED BUT DID NOT COMPLETE
+                if (offerClicked && !offerCompleted) {
+                    popup.style.display = 'flex';
+                }
+                // NO AUTO-REDIRECT IF NO CLICK
             }
         }, 1000);
 
-        // === CLICK ON OVERLAY → STOP TIMER ===
+        // === CLICK ANYWHERE → STOP TIMER ===
         overlay.addEventListener('click', () => {
             if (offerClicked) return;
             offerClicked = true;
             clearInterval(countdown);
             timerDisplay.textContent = "0";
             timerDisplay.style.color = "#00cc00";
-            overlay.style.display = 'none'; // Remove overlay after click
+            overlay.style.display = 'none'; // Allow full interaction
         });
 
         // === OFFER COMPLETION DETECTION ===
-        // Method 1: Listen for postMessage (if offer page supports)
-        window.addEventListener('message', (event) => {
-            if (event.data === 'offer_complete' && offerClicked) {
-                showRedirect();
+        setInterval(() => {
+            try {
+                const url = iframe.contentWindow.location.href;
+                if (offerClicked && !offerCompleted && (
+                    url.includes('thankyou') || 
+                    url.includes('success') || 
+                    url.includes('complete') ||
+                    url.includes('redirect') ||
+                    url !== "https://optilinklock.com/1843981"
+                )) {
+                    offerCompleted = true;
+                    redirectToTelegram();
+                }
+            } catch (e) { /* Cross-origin expected */ }
+        }, 2000);
+
+        // === Manual Trigger (if you control offer page) ===
+        window.addEventListener('message', (e) => {
+            if (e.data === 'offer_done' && offerClicked) {
+                offerCompleted = true;
+                redirectToTelegram();
             }
         });
 
-        // Method 2: Detect URL change (thank you, success, etc.)
-        setInterval(() => {
-            try {
-                const iframeURL = iframe.contentWindow.location.href;
-                if (offerClicked && (
-                    iframeURL.includes('thankyou') || 
-                    iframeURL.includes('success') || 
-                    iframeURL.includes('complete') ||
-                    iframeURL !== "https://optilinklock.com/1843981"
-                )) {
-                    showRedirect();
-                }
-            } catch (e) { /* Cross-origin block expected */ }
-        }, 2000);
-
         // === FINAL REDIRECT ===
-        function showRedirect() {
-            if (notice.style.display === 'block') return;
-            notice.style.display = 'block';
+        function redirectToTelegram() {
+            popup.style.display = 'none';
             setTimeout(() => {
                 window.location.href = TELEGRAM_URL;
-            }, 1500);
+            }, 800);
+        }
+
+        // === Close Popup & Continue Offer ===
+        function closePopup() {
+            popup.style.display = 'none';
         }
     </script>
 
